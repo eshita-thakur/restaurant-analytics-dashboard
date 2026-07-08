@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+backend/venv/
+
+# Environment variables (contains secrets!)
+backend/.env
+
+# VS Code settings (personal, not shared)
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
