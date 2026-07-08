@@ -5,8 +5,10 @@ from app.models.role import Role
 from app.models.user import User
 from app.models.menu_category import MenuCategory
 from app.models.menu_item import MenuItem
+from app.models.customer import Customer
 from app.routes.auth_routes import auth_bp
 from app.routes.menu_routes import menu_bp
+from app.routes.customer_routes import customer_bp
 
 def create_app():
     app = Flask(__name__)
@@ -19,6 +21,7 @@ def create_app():
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(menu_bp)
+    app.register_blueprint(customer_bp)
 
     @app.route("/")
     def home():
