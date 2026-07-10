@@ -3,6 +3,9 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Menu from "./pages/Menu";
+import Orders from "./pages/Orders";
+import Customers from "./pages/Customers";
+import Employees from "./pages/Employees";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -14,6 +17,9 @@ function App() {
 
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/menu" element={<ProtectedRoute><Menu /></ProtectedRoute>} />
+      <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+      <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+      <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
     </Routes>
   );
 }
