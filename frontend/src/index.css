@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #1B2340;
+  --color-paper: #FAF8FC;
+  --color-ink: #211F33;
+  --color-blossom: #E8A9C4;
+  --color-lavender: #B79FDB;
+  --color-sky: #9FC9E8;
+
+  --font-display: "Fraunces", serif;
+  --font-body: "Work Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+@keyframes ticket-in {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(0.4); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes petal-fall {
+  0%   { top: -10%; transform: translateX(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.85; }
+  50%  { transform: translateX(24px) rotate(160deg); }
+  90%  { opacity: 0.85; }
+  100% { top: 110%; transform: translateX(-18px) rotate(320deg); opacity: 0; }
+}
+
+.animate-ticket-in {
+  animation: ticket-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dot-bounce {
+  animation: dot-bounce 1.2s ease-in-out infinite both;
+}
+
+.petal {
+  position: absolute;
+  top: -10%;
+  width: var(--size, 16px);
+  height: var(--size, 16px);
+  animation: petal-fall linear infinite;
+  animation-duration: var(--duration, 10s);
+  animation-delay: var(--delay, 0s);
+  pointer-events: none;
+}
+
+@keyframes bloom {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.bloom-petal {
+  animation: bloom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticket-in, .dot-bounce, .petal, .bloom-petal {
+    animation: none !important;
+  }
+}
