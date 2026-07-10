@@ -7,6 +7,7 @@ import Orders from "./pages/Orders";
 import Customers from "./pages/Customers";
 import Employees from "./pages/Employees";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import Inventory from "./pages/Inventory";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
       <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
       <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
+      <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
     </Routes>
   );
 }
