@@ -6,8 +6,10 @@ import Menu from "./pages/Menu";
 import Orders from "./pages/Orders";
 import Customers from "./pages/Customers";
 import Employees from "./pages/Employees";
-import ProtectedRoute from "./routes/ProtectedRoute";
 import Inventory from "./pages/Inventory";
+import Suppliers from "./pages/Suppliers";
+import Reservations from "./pages/Reservations";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
       <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
       <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+      <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+      <Route path="/reservations" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
     </Routes>
   );
 }

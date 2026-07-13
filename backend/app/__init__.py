@@ -34,6 +34,7 @@ from app.routes.reservation_routes import reservation_bp
 from app.routes.feedback_routes import feedback_bp
 from app.routes.coupon_routes import coupon_bp
 from app.routes.expense_routes import expense_bp
+from app.routes.analytics_routes import analytics_bp
 
 
 def create_app():
@@ -58,6 +59,7 @@ def create_app():
     app.register_blueprint(feedback_bp)
     app.register_blueprint(coupon_bp)
     app.register_blueprint(expense_bp)
+    app.register_blueprint(analytics_bp)
 
     @app.route("/")
     def home():
