@@ -5,6 +5,8 @@ from app.models.order_item import OrderItem
 from app.models.menu_item import MenuItem
 from app.models.inventory import Inventory
 from app.models.stock_transaction import StockTransaction
+from app.models.customer import Customer
+from app.models.employee import Employee
 
 
 def _orders_dataframe(start_date=None, end_date=None):
@@ -196,4 +198,166 @@ def get_inventory_turnover():
             }
             for _, row in all_items.iterrows()
         ]
+    }
+
+
+def get_sales_growth():
+    df = _orders_dataframe()
+
+    if df.empty or len(df) < 2:
+        return {"monthly_growth": []}
+
+    monthly = (
+        df.groupby(df["order_date"].dt.to_period("M"))["total_amount"]
+        .sum()
+        .reset_index()
+        .rename(columns={"order_date": "month", "total_amount": "revenue"})
+        .sort_values("month")
+    )
+    monthly["month"] = monthly["month"].astype(str)
+
+    monthly["previous_revenue"] = monthly["revenue"].shift(1)
+    monthly["growth_percent"] = (
+        (monthly["revenue"] - monthly["previous_revenue"]) / monthly["previous_revenue"] * 100
+    ).round(2)
+
+    return {
+        "monthly_growth": [
+            {
+                "month": row["month"],
+                "revenue": round(row["revenue"], 2),
+                "growth_percent": None if pd.isna(row["growth_percent"]) else row["growth_percent"],
+            }
+            for _, row in monthly.iterrows()
+        ]
+    }
+
+
+def get_peak_hours():
+    df = _orders_dataframe()
+
+    if df.empty:
+        return {"hourly": []}
+
+    df["hour"] = df["order_date"].dt.hour
+
+    hourly = (
+        df.groupby("hour")
+        .agg(order_count=("order_id", "count"), revenue=("total_amount", "sum"))
+        .reindex(range(24), fill_value=0)
+        .reset_index()
+    )
+
+    return {
+        "hourly": [
+            {
+                "hour": int(row["hour"]),
+                "order_count": int(row["order_count"]),
+                "revenue": round(row["revenue"], 2),
+            }
+            for _, row in hourly.iterrows()
+        ]
+    }
+
+
+def get_customer_retention():
+    rows = (
+        db.session.query(Order.customer_id, Order.order_id)
+        .filter(Order.status != "cancelled", Order.customer_id.isnot(None))
+        .all()
+    )
+
+    df = pd.DataFrame(rows, columns=["customer_id", "order_id"])
+
+    if df.empty:
+        return {"total_customers": 0, "returning_customers": 0, "retention_rate": 0}
+
+    order_counts = df.groupby("customer_id")["order_id"].count()
+
+    total_customers = int(order_counts.count())
+    returning_customers = int((order_counts > 1).sum())
+    retention_rate = round((returning_customers / total_customers) * 100, 2) if total_customers else 0
+
+    return {
+        "total_customers": total_customers,
+        "returning_customers": returning_customers,
+        "retention_rate": retention_rate,
+    }
+
+
+def get_employee_performance():
+    rows = (
+        db.session.query(
+            Order.employee_id, Employee.first_name, Employee.last_name,
+            Order.order_id, Order.total_amount
+        )
+        .join(Employee, Employee.employee_id == Order.employee_id)
+        .filter(Order.status != "cancelled")
+        .all()
+    )
+
+    df = pd.DataFrame(rows, columns=["employee_id", "first_name", "last_name", "order_id", "total_amount"])
+
+    if df.empty:
+        return {"employees": []}
+
+    df["total_amount"] = df["total_amount"].astype(float)
+
+    summary = (
+        df.groupby(["employee_id", "first_name", "last_name"])
+        .agg(orders_handled=("order_id", "count"), total_revenue=("total_amount", "sum"))
+        .reset_index()
+        .sort_values("total_revenue", ascending=False)
+    )
+
+    return {
+        "employees": [
+            {
+                "employee_id": int(row["employee_id"]),
+                "name": f"{row['first_name']} {row['last_name']}",
+                "orders_handled": int(row["orders_handled"]),
+                "total_revenue": round(row["total_revenue"], 2),
+            }
+            for _, row in summary.iterrows()
+        ]
+    }
+
+
+def get_food_waste():
+    rows = (
+        db.session.query(
+            StockTransaction.inventory_id, Inventory.item_name, Inventory.unit,
+            StockTransaction.quantity, StockTransaction.transaction_type
+        )
+        .join(Inventory, Inventory.inventory_id == StockTransaction.inventory_id)
+        .filter(StockTransaction.transaction_type == "waste")
+        .all()
+    )
+
+    df = pd.DataFrame(rows, columns=["inventory_id", "item_name", "unit", "quantity", "transaction_type"])
+
+    if df.empty:
+        return {"waste_by_item": [], "total_waste_events": 0}
+
+    df["quantity"] = df["quantity"].astype(float)
+
+    summary = (
+        df.groupby(["inventory_id", "item_name", "unit"])["quantity"]
+        .sum()
+        .reset_index()
+        .rename(columns={"quantity": "total_wasted"})
+        .sort_values("total_wasted", ascending=False)
+    )
+
+    return {
+        "waste_by_item": [
+            {
+                "inventory_id": int(row["inventory_id"]),
+                "item_name": row["item_name"],
+                "unit": row["unit"],
+                "total_wasted": round(row["total_wasted"], 2),
+            }
+            for _, row in summary.iterrows()
+        ],
+        "total_waste_events": int(len(df)),
     }
