@@ -5,7 +5,11 @@ import {
 } from "recharts";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
-import { getRevenue, getItemPerformance, getInventoryTurnover } from "../api/analytics";
+import {
+  getRevenue, getItemPerformance, getInventoryTurnover,
+  getSalesGrowth, getPeakHours, getCustomerRetention,
+  getEmployeePerformance, getFoodWaste
+} from "../api/analytics";
 
 function StatCard({ label, value, sublabel }) {
   return (
@@ -17,34 +21,52 @@ function StatCard({ label, value, sublabel }) {
   );
 }
 
+function ChartCard({ title, children }) {
+  return (
+    <div className="bg-white border border-ink/10 rounded-sm p-6 animate-ticket-in">
+      <h2 className="font-display text-lg mb-4">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
-  const [revenue, setRevenue] = useState(null);
-  const [items, setItems] = useState(null);
-  const [turnover, setTurnover] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  async function loadAll() {
-    try {
-      const [revRes, itemsRes, turnoverRes] = await Promise.all([
-        getRevenue(),
-        getItemPerformance(5),
-        getInventoryTurnover(),
-      ]);
-      setRevenue(revRes.data);
-      setItems(itemsRes.data);
-      setTurnover(turnoverRes.data);
-    } catch (err) {
-      console.error("Dashboard load failed:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-  loadAll();
-}, []);
+    async function loadAll() {
+      try {
+        const [
+          revRes, itemsRes, turnoverRes, growthRes,
+          peakRes, retentionRes, employeeRes, wasteRes
+        ] = await Promise.all([
+          getRevenue(), getItemPerformance(5), getInventoryTurnover(),
+          getSalesGrowth(), getPeakHours(), getCustomerRetention(),
+          getEmployeePerformance(), getFoodWaste()
+        ]);
 
-  if (loading || !revenue || !items || !turnover) {
+        setData({
+          revenue: revRes.data,
+          items: itemsRes.data,
+          turnover: turnoverRes.data,
+          growth: growthRes.data,
+          peak: peakRes.data,
+          retention: retentionRes.data,
+          employees: employeeRes.data,
+          waste: wasteRes.data,
+        });
+      } catch (err) {
+        console.error("Dashboard load failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAll();
+  }, []);
+
+  if (loading || !data) {
     return (
       <Layout>
         <p className="text-ink/40 text-sm">Loading your dashboard...</p>
@@ -52,7 +74,10 @@ export default function Dashboard() {
     );
   }
 
-  const dailyChartData = revenue.daily.slice(-14); // last 14 days with data
+  const { revenue, items, turnover, growth, peak, retention, employees, waste } = data;
+  const dailyChartData = revenue.daily.slice(-14);
+  const peakHoursWithOrders = peak.hourly.filter((h) => h.order_count > 0);
+  const latestGrowth = growth.monthly_growth[growth.monthly_growth.length - 1];
 
   return (
     <Layout>
@@ -60,15 +85,19 @@ export default function Dashboard() {
       <p className="text-ink/60 mb-8">Here's what's happening at your restaurant.</p>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Revenue" value={`₹${revenue.total_revenue.toLocaleString()}`} />
         <StatCard label="Total Orders" value={revenue.total_orders} />
         <StatCard label="Average Order Value" value={`₹${revenue.average_order_value.toFixed(2)}`} />
+        <StatCard
+          label="Customer Retention"
+          value={`${retention.retention_rate}%`}
+          sublabel={`${retention.returning_customers} of ${retention.total_customers} customers`}
+        />
       </div>
 
       {/* Revenue chart */}
-      <div className="bg-white border border-ink/10 rounded-sm p-6 mb-8 animate-ticket-in">
-        <h2 className="font-display text-lg mb-4">Revenue trend</h2>
+      <ChartCard title="Revenue trend">
         {dailyChartData.length === 0 ? (
           <p className="text-sm text-ink/40">No revenue data yet.</p>
         ) : (
@@ -85,12 +114,11 @@ export default function Dashboard() {
             </LineChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </ChartCard>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Top selling items */}
-        <div className="bg-white border border-ink/10 rounded-sm p-6 animate-ticket-in">
-          <h2 className="font-display text-lg mb-4">Top selling items</h2>
+        <ChartCard title="Top selling items">
           {items.top_selling.length === 0 ? (
             <p className="text-sm text-ink/40">No sales data yet.</p>
           ) : (
@@ -106,11 +134,37 @@ export default function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           )}
-        </div>
+        </ChartCard>
 
+        {/* Peak hours */}
+        <ChartCard title="Peak hours">
+          {peakHoursWithOrders.length === 0 ? (
+            <p className="text-sm text-ink/40">No order data yet.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={peak.hourly}>
+                <XAxis
+                  dataKey="hour"
+                  tick={{ fontSize: 11, fill: "#2A241D99" }}
+                  tickFormatter={(h) => `${h}:00`}
+                  interval={2}
+                />
+                <YAxis tick={{ fontSize: 12, fill: "#2A241D99" }} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 4, border: "1px solid #2A241D1A", fontSize: 13 }}
+                  labelFormatter={(h) => `${h}:00`}
+                  formatter={(value) => [value, "Orders"]}
+                />
+                <Bar dataKey="order_count" fill="#9FC9E8" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Inventory turnover */}
-        <div className="bg-white border border-ink/10 rounded-sm p-6 animate-ticket-in">
-          <h2 className="font-display text-lg mb-4">Inventory turnover</h2>
+        <ChartCard title="Inventory turnover">
           {turnover.items.length === 0 ? (
             <p className="text-sm text-ink/40">No inventory data yet.</p>
           ) : (
@@ -133,7 +187,70 @@ export default function Dashboard() {
               ))}
             </div>
           )}
-        </div>
+        </ChartCard>
+
+        {/* Employee performance */}
+        <ChartCard title="Employee performance">
+          {employees.employees.length === 0 ? (
+            <p className="text-sm text-ink/40">No order data yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {employees.employees.map((emp) => (
+                <div key={emp.employee_id} className="flex items-center justify-between text-sm">
+                  <div>
+                    <span className="font-medium">{emp.name}</span>
+                    <span className="text-ink/40 ml-2 text-xs">{emp.orders_handled} orders</span>
+                  </div>
+                  <span className="font-mono text-lavender">₹{emp.total_revenue.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 mb-8">
+        {/* Sales growth */}
+        <ChartCard title="Monthly sales growth">
+          {growth.monthly_growth.length === 0 ? (
+            <p className="text-sm text-ink/40">Not enough data yet to calculate growth.</p>
+          ) : (
+            <div className="space-y-3">
+              {growth.monthly_growth.map((m) => (
+                <div key={m.month} className="flex items-center justify-between text-sm">
+                  <span>{m.month}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-ink/60">₹{m.revenue.toLocaleString()}</span>
+                    {m.growth_percent !== null && (
+                      <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${
+                        m.growth_percent >= 0 ? "bg-sky/20 text-navy" : "bg-red-100 text-red-700"
+                      }`}>
+                        {m.growth_percent >= 0 ? "+" : ""}{m.growth_percent}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ChartCard>
+
+        {/* Food waste */}
+        <ChartCard title="Food waste">
+          {waste.waste_by_item.length === 0 ? (
+            <p className="text-sm text-ink/40">No waste recorded — great work!</p>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-ink/50 mb-2">{waste.total_waste_events} waste events logged</p>
+              {waste.waste_by_item.map((w) => (
+                <div key={w.inventory_id} className="flex items-center justify-between text-sm">
+                  <span>{w.item_name}</span>
+                  <span className="font-mono text-blossom">{w.total_wasted} {w.unit}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </ChartCard>
       </div>
     </Layout>
   );
