@@ -35,7 +35,7 @@ from app.routes.feedback_routes import feedback_bp
 from app.routes.coupon_routes import coupon_bp
 from app.routes.expense_routes import expense_bp
 from app.routes.analytics_routes import analytics_bp
-
+from app.routes.report_routes import report_bp
 
 def create_app():
     app = Flask(__name__)
@@ -60,7 +60,7 @@ def create_app():
     app.register_blueprint(coupon_bp)
     app.register_blueprint(expense_bp)
     app.register_blueprint(analytics_bp)
-
+    app.register_blueprint(report_bp)
     @app.route("/")
     def home():
         return {"message": "Restaurant Analytics API is running"}
