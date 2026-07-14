@@ -37,9 +37,9 @@ from app.routes.expense_routes import expense_bp
 from app.routes.analytics_routes import analytics_bp
 from app.routes.report_routes import report_bp
 
-def create_app():
+def create_app(config_class=Config):
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(config_class)
 
     db.init_app(app)
     jwt.init_app(app)
