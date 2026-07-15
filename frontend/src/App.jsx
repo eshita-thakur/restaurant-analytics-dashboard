@@ -9,6 +9,7 @@ import Employees from "./pages/Employees";
 import Inventory from "./pages/Inventory";
 import Suppliers from "./pages/Suppliers";
 import Reservations from "./pages/Reservations";
+import Reports from "./pages/Reports";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
       <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
       <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
       <Route path="/reservations" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
     </Routes>
   );
 }

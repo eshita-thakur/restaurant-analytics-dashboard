@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: "Inventory", path: "/inventory" },
   { label: "Suppliers", path: "/suppliers" },
   { label: "Reservations", path: "/reservations" },
+  { label: "Reports", path: "/reports" },
 ];
 
 export default function Layout({ children }) {
