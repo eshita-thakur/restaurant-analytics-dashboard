@@ -183,7 +183,7 @@ def get_transactions(inventory_id):
         return jsonify({"error": "Inventory item not found"}), 404
 
     transactions = StockTransaction.query.filter_by(inventory_id=inventory_id) \
-        .order_by(StockTransaction.created_at.desc()).all()
+    .order_by(StockTransaction.created_at.desc(), StockTransaction.transaction_id.desc()).all()
 
     result = [
         {
